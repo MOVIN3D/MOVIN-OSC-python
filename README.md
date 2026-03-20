@@ -1,4 +1,4 @@
-# MOVIN OSC Viewer
+# MOVIN OSC Receiver & Viewer (Python)
 
 Python project for receiving MOVIN OSC motion and point cloud packets and visualizing them in real time.
 
