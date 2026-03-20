@@ -12,55 +12,27 @@ Python project for receiving MOVIN OSC motion and point cloud packets and visual
 - Shows per-joint local axes in RGB
 - Handles non-UTF-8 OSC strings, including common Korean encodings
 
-## Packet formats
+## OSC Formats
 
-### Motion
+### `/MOVIN/Frame`
 
-Expected OSC address: `/MOVIN/Frame`
+Header:
 
-Arguments:
+`[timestamp, actorName, frameIdx, numChunks, chunkIdx, totalBoneCount, chunkBoneCount]`
 
-1. `timestamp`
-2. `actorName`
-3. `frameIdx`
-4. `numChunks`
-5. `chunkIndex`
-6. `totalBoneCount`
-7. `chunkBoneCount`
-8. Repeated per bone:
-   - `boneIndex`
-   - `parentIndex`
-   - `boneName`
-   - `localPosition.x`
-   - `localPosition.y`
-   - `localPosition.z`
-   - `restRotation.x`
-   - `restRotation.y`
-   - `restRotation.z`
-   - `restRotation.w`
-   - `localRotation.x`
-   - `localRotation.y`
-   - `localRotation.z`
-   - `localRotation.w`
-   - `localScale.x`
-   - `localScale.y`
-   - `localScale.z`
+Per-bone payload:
 
-### Point Cloud
+`[boneIndex, parentIndex, boneName, px, py, pz, rqx, rqy, rqz, rqw, qx, qy, qz, qw, sx, sy, sz]`
 
-Expected OSC address: `/MOVIN/PointCloud`
+### `/MOVIN/PointCloud`
 
-Arguments:
+Header:
 
-1. `frameIdx`
-2. `totalPoints`
-3. `chunkIdx`
-4. `numChunks`
-5. `chunkPointCount`
-6. Repeated per point:
-   - `x`
-   - `y`
-   - `z`
+`[frameIdx, totalPoints, chunkIdx, numChunks, chunkPointCount]`
+
+Per-point payload:
+
+`[x, y, z]`
 
 ## Install With Conda
 
