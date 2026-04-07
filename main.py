@@ -305,6 +305,13 @@ def unity_to_opengl_rot(quat: np.ndarray) -> np.ndarray:
     return np.array([quat[0], -quat[1], -quat[2], quat[3]], dtype=np.float32)
 
 
+def trs_matrix(position: np.ndarray, rotation: np.ndarray, scale: np.ndarray) -> np.ndarray:
+    matrix = np.eye(4, dtype=np.float32)
+    matrix[:3, :3] = quaternion_matrix(rotation) @ np.diag(scale.astype(np.float32))
+    matrix[:3, 3] = position.astype(np.float32)
+    return matrix
+
+
 def clone_bone(bone: BoneRecord) -> BoneRecord:
     return BoneRecord(
         bone_index=bone.bone_index,
@@ -323,28 +330,29 @@ def compute_world_pose(bones: List[BoneRecord]) -> List[BoneRecord]:
     ordered = sorted(bones, key=lambda bone: bone.bone_index)
     bone_map = {bone.bone_index: bone for bone in ordered}
 
-    unity_positions: Dict[int, np.ndarray] = {}
+    unity_matrices: Dict[int, np.ndarray] = {}
     unity_rotations: Dict[int, np.ndarray] = {}
-
     def resolve_pose(bone_index: int) -> Tuple[np.ndarray, np.ndarray]:
-        if bone_index in unity_positions:
-            return unity_positions[bone_index], unity_rotations[bone_index]
+        if bone_index in unity_matrices:
+            return unity_matrices[bone_index], unity_rotations[bone_index]
 
         bone = bone_map[bone_index]
         local_rotation = normalize_quaternion(bone.local_rotation)
+        local_scale = bone.local_scale.astype(np.float32)
+        local_matrix = trs_matrix(bone.local_position, local_rotation, local_scale)
         if bone.parent_index < 0 or bone.parent_index not in bone_map:
-            unity_positions[bone_index] = bone.local_position.astype(np.float32)
+            unity_matrices[bone_index] = local_matrix
             unity_rotations[bone_index] = local_rotation
         else:
-            parent_position, parent_rotation = resolve_pose(bone.parent_index)
-            unity_positions[bone_index] = parent_position + quaternion_matrix(parent_rotation) @ bone.local_position
+            parent_matrix, parent_rotation = resolve_pose(bone.parent_index)
+            unity_matrices[bone_index] = parent_matrix @ local_matrix
             unity_rotations[bone_index] = normalize_quaternion(
                 quaternion_multiply(parent_rotation, local_rotation)
             )
 
-        bone.world_position = unity_to_opengl_pos(unity_positions[bone_index])
+        bone.world_position = unity_to_opengl_pos(unity_matrices[bone_index][:3, 3])
         bone.world_rotation = unity_to_opengl_rot(unity_rotations[bone_index])
-        return unity_positions[bone_index], unity_rotations[bone_index]
+        return unity_matrices[bone_index], unity_rotations[bone_index]
 
     for bone in ordered:
         resolve_pose(bone.bone_index)
